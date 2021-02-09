@@ -97,6 +97,23 @@ let verify req =
       | Ok iss ->
           Response.make ~status:`OK ~body:(Body.of_string iss) () |> Lwt.return
       )
+(* as member I want be able to delete my account *)
+let delete req =
+  let open Lwt in
+  let uuid = Router.param req "id" in
+  req
+  |> Request.to_json
+  >>= function
+  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+  | Some json ->
+      let open Yojson.Safe.Util in
+      ( MemberServive.delete ~uuid
+        >>= (function
+        | Error e ->
+            Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+            |> Lwt.return
+        | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
+      )
 
 
 let routes =
@@ -105,6 +122,7 @@ let routes =
   ; App.post "/signup" signup
   ; App.post "/signin" signin
   ; App.post "/verify" verify
+  ; App.delete "/member/:id" delete
   ]
 
 

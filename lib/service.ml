@@ -67,4 +67,17 @@ module Member (MemberRepository : Repository.MEMBER) = struct
         >>= (function
         | Ok db_result -> Lwt.return_ok @@ Jwt.from_member db_result
         | Error _ -> Lwt.return_error "Wrong email or password")
+  
+  let delete ~uuid = 
+    
+    let open Lwt in 
+    match D.Uuid.make uuid with
+    | Error e -> Lwt.return_error e
+    | Ok id_member -> 
+      MemberRepository.delete ~id:id_member
+      >>= (function
+      | Ok db_result -> Lwt.return_ok ()
+      | Error result -> 
+        let _ = print_endline (Caqti_error.show result) in Lwt.return_error "Unable to delete")
+
 end

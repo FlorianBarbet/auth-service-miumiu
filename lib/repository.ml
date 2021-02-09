@@ -27,6 +27,10 @@ module type MEMBER = sig
     -> hash:D.Hash.t
     -> id:D.Uuid.t
     -> (unit, ([> Caqti_error.call_or_retrieve ] as 'err)) query_result
+
+  val delete :
+        id:D.Uuid.t 
+    ->  (unit, ([> Caqti_error.call_or_retrieve ] as 'err)) query_result
 end
 
 module Member (Connection : Caqti_lwt.CONNECTION) : MEMBER = struct
@@ -80,7 +84,7 @@ module Member (Connection : Caqti_lwt.CONNECTION) : MEMBER = struct
     |> [%rapper
          execute
            {sql|
-        INSERT INTO "Member" (id, email, hash,username) VALUES  (%Uuid{id}, %Email{email}, %Hash{hash}, %string?{username})
+        INSERT INTO "Member" (id, email, hash, username) VALUES  (%Uuid{id}, %Email{email}, %Hash{hash}, %string?{username})
         |sql}]
 
 
@@ -91,6 +95,15 @@ module Member (Connection : Caqti_lwt.CONNECTION) : MEMBER = struct
            {sql|
         UPDATE "Member"
         SET (email, username, hash) = (%Email{email}, %string?{username}, %Hash{hash})
+        WHERE id = %Uuid{id}
+        |sql}]
+
+  let delete =
+    connection
+    |> [%rapper
+         execute
+           {sql|
+        DELETE FROM "Member" 
         WHERE id = %Uuid{id}
         |sql}]
 end
