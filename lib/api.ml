@@ -107,7 +107,13 @@ let delete req =
   | None -> Response.make ~status:`Bad_request () |> Lwt.return
   | Some json ->
       let open Yojson.Safe.Util in
-      ( MemberServive.delete ~uuid
+      let jwt = json |> member "jwt" |> to_string in
+      ( match Service.Jwt.verify_and_get_iss jwt with
+      | Error e ->
+          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+          |> Lwt.return
+      | Ok _ ->
+        MemberServive.delete ~uuid
         >>= (function
         | Error e ->
             Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
