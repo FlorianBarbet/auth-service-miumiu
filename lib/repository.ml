@@ -18,6 +18,7 @@ module type MEMBER = sig
        id:D.Uuid.t
     -> email:D.Email.t
     -> hash:D.Hash.t
+    -> username:string option
     -> (unit, ([> Caqti_error.call_or_retrieve ] as 'err)) query_result
 
   val update :
@@ -79,7 +80,7 @@ module Member (Connection : Caqti_lwt.CONNECTION) : MEMBER = struct
     |> [%rapper
          execute
            {sql|
-        INSERT INTO "Member" (id, email, hash) VALUES  (%Uuid{id}, %Email{email}, %Hash{hash})
+        INSERT INTO "Member" (id, email, hash,username) VALUES  (%Uuid{id}, %Email{email}, %Hash{hash}, %string?{username})
         |sql}]
 
 

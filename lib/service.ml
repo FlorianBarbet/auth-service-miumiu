@@ -43,17 +43,18 @@ module Jwt = struct
 end
 
 module Member (MemberRepository : Repository.MEMBER) = struct
-  let signup ~email ~password =
+  let signup ~email ~password ~username =
     let id = D.Uuid.v4_gen E.random_seed () in
     let hash = D.Hash.make ~seed:E.hash_seed password in
     match D.Email.make email with
     | Error e -> Lwt.return_error e
     | Ok member_email ->
         let open Lwt in
-        MemberRepository.create ~id ~hash ~email:member_email
+        MemberRepository.create ~id ~hash ~email:member_email ~username
         >>= (function
         | Ok db_result -> Lwt.return_ok ()
-        | Error _ -> Lwt.return_error "Unable to create")
+        | Error result -> 
+          let _ = print_endline (Caqti_error.show result) in Lwt.return_error "Unable to create")
 
 
   let signin ~email ~password =

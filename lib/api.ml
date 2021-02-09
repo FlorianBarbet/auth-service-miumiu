@@ -43,8 +43,9 @@ let signup req =
   | Some json ->
       let open Yojson.Safe.Util in
       let email = json |> member "email" |> to_string
-      and password = json |> member "password" |> to_string in
-      MemberServive.signup ~email ~password
+      and password = json |> member "password" |> to_string
+      and username = json |> member "username" |> to_string_option in
+      MemberServive.signup ~email ~password ~username
       >>= (function
       | Error e ->
           Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
