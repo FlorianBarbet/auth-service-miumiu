@@ -80,4 +80,36 @@ module Member (MemberRepository : Repository.MEMBER) = struct
       | Error result -> 
         let _ = print_endline (Caqti_error.show result) in Lwt.return_error "Unable to delete")
 
+  let get_by_id ~uuid =
+    let open Lwt in 
+    match D.Uuid.make uuid with
+    | Error e -> Lwt.return_error e
+    | Ok id_member -> 
+      MemberRepository.get_by_id ~id:id_member
+      >>= (function
+      | Ok db_result -> Lwt.return_ok ( D.Member.to_json_string db_result )
+      | Error result -> 
+        let _ = print_endline (Caqti_error.show result) in Lwt.return_error "An error has occurs")
+
+  let update ~uuid ~email ~password ~username =
+    let open Lwt in 
+    let getOrDefault opt def converter = match opt with | None -> def | Some str -> (converter str) in  
+    match D.Uuid.make uuid with
+    | Error e -> Lwt.return_error e
+    | Ok id_member -> 
+      MemberRepository.get_by_id ~id:id_member
+      >>=(function
+      | Error result -> 
+        let _ = print_endline (Caqti_error.show result) in Lwt.return_error "An error has occurs"
+      | Ok db_result -> 
+        MemberRepository.update ~id:id_member
+         ~email:(getOrDefault email db_result.email (fun e -> match D.Email.make e with | Ok str -> str | Error e -> db_result.email))
+         ~hash:(getOrDefault password db_result.hash (fun e -> D.Hash.make ~seed:E.hash_seed e ))
+         ~username
+         >>=(function
+            | Error result -> 
+              let _ = print_endline (Caqti_error.show result) in Lwt.return_error "Unable to update"
+            | Ok db_result -> Lwt.return_ok ()))
+
+
 end

@@ -11,6 +11,7 @@ module Email = struct
     | Ok address -> Ok address
     | Error _ -> Error "Invalid_Email"
 
+  let to_string email = email |> Emile.address_to_string
 
   let to_yojson email = Yojson.Safe.from_string @@ show email
 
@@ -24,7 +25,6 @@ module Hash = struct
 
   let verify password hash =
     if Bcrypt.verify password hash then Ok true else Error "Invalid_Password"
-
 
   let show = Bcrypt.string_of_hash
 
@@ -60,5 +60,11 @@ module Member = struct
     }
   [@@deriving make, show, yojson]
 
+  let stringify m = 
+    let str_username = match m.username with |Some a->a |None -> "" in
+    {|{"username":"|}^str_username^{|", "email":"|}^(Email.to_string m.email)^{|"}|}
+  let to_json_string m =
+    let str_username = match m.username with |Some a->a |None -> "" in
+    `Assoc ["username", `String (str_username) ; "mail", `String ( (Email.to_string m.email)) ]
   let id member = member.id
 end

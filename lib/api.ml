@@ -97,8 +97,9 @@ let verify req =
       | Ok iss ->
           Response.make ~status:`OK ~body:(Body.of_string iss) () |> Lwt.return
       )
-(* as member I want be able to delete my account *)
-let delete req =
+
+ (*factorisation*)
+ let check_auth action req=     
   let open Lwt in
   let uuid = Router.param req "id" in
   req
@@ -107,20 +108,51 @@ let delete req =
   | None -> Response.make ~status:`Bad_request () |> Lwt.return
   | Some json ->
       let open Yojson.Safe.Util in
-      let jwt = json |> member "jwt" |> to_string in
+      let jwt = match Request.header "Authorization" req with | Some str -> str | None -> ""  in
       ( match Service.Jwt.verify_and_get_iss jwt with
       | Error e ->
           Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
           |> Lwt.return
-      | Ok _ ->
-        MemberServive.delete ~uuid
-        >>= (function
-        | Error e ->
-            Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-            |> Lwt.return
-        | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
+      | Ok _ -> action ~uuid ~req
       )
+(* as member I want be able to delete my account *)
+let delete_member ~uuid ~req = 
+  let open Lwt in
+  MemberServive.delete ~uuid
+  >>= (function
+  | Error e ->
+      Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+      |> Lwt.return
+  | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
 
+(* as member I want be able to get my account informations *)
+let get_member ~uuid ~req= 
+  let open Lwt in
+  let open Yojson.Safe.Util in
+  MemberServive.get_by_id ~uuid
+  >>= (function
+  | Error e ->
+      Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+      |> Lwt.return
+  | Ok res -> Response.of_json res|> Lwt.return) 
+(* as member I want be able to update my account informations *)
+let update ~uuid ~req=
+  let open Lwt in
+  req
+  |> Request.to_json
+  >>= function
+  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+  | Some json ->
+      let open Yojson.Safe.Util in
+      let email = json |> member "email" |> to_string_option
+      and password = json |> member "password" |> to_string_option
+      and username = json |> member "username" |> to_string_option in
+  MemberServive.update ~uuid ~email ~password ~username
+  >>= (function
+  | Error e ->
+      Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+      |> Lwt.return
+  | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
 
 let routes =
   [ App.get "/" root
@@ -128,7 +160,9 @@ let routes =
   ; App.post "/signup" signup
   ; App.post "/signin" signin
   ; App.post "/verify" verify
-  ; App.delete "/member/:id" delete
+  ; App.delete "/member/:id" (check_auth delete_member)
+  ; App.get "/member/:id" (check_auth get_member)
+  ; App.put "/member/:id" (check_auth update)
   ]
 
 

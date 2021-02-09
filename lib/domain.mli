@@ -12,6 +12,8 @@ module Email : sig
 
   val make : string -> (t, string) result
 
+  val to_string : t -> string
+
   val to_yojson : t -> Yojson.Safe.t
 
   val of_yojson : Yojson.Safe.t -> (t, string) result
@@ -59,6 +61,9 @@ module Member : sig
     ; hash: Hash.t
     }
   [@@deriving make, show, yojson]
+
+  val stringify : t -> string
+  val to_json_string : t -> [> `Assoc of (string * [> `String of string]) list ]
 
   val id : t -> Uuid.t
 end
