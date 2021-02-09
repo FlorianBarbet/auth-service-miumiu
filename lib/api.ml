@@ -15,7 +15,7 @@ let set_logger () =
   Logs.set_reporter (Logs_fmt.reporter ()) ;
   Logs.set_level Infra.Environment.log_level
 
-
+let json_response_of_a_string name str ~status = Response.of_json (`Assoc [name, `String (str)]) ~status
 (** Heartbeat route *)
 let root req =
   Printf.sprintf "Welcome to auth server"
@@ -48,8 +48,8 @@ let signup req =
       MemberServive.signup ~email ~password ~username
       >>= (function
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-          |> Lwt.return
+        json_response_of_a_string "Error" e ~status:`Forbidden
+        |> Lwt.return
       | Ok _ -> Response.make ~status:`Created () |> Lwt.return)
 
 
@@ -67,16 +67,16 @@ let signin req =
       MemberServive.signin ~email ~password
       >>= (function
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-          |> Lwt.return
+        json_response_of_a_string "Error" e ~status:`Forbidden
+        |> Lwt.return
       | Ok jwt ->
           ( match jwt with
           | Error e ->
-              Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-              |> Lwt.return
+            json_response_of_a_string "Error" e ~status:`Forbidden
+            |> Lwt.return
           | Ok jwt_string ->
-              Response.make ~status:`OK ~body:(Body.of_string jwt_string) ()
-              |> Lwt.return ))
+            json_response_of_a_string "jwt" jwt_string ~status:`OK
+            |> Lwt.return ))
 
 
 (** Jwt verification route *)
@@ -92,10 +92,11 @@ let verify req =
       let jwt = json |> member "jwt" |> to_string in
       ( match Service.Jwt.verify_and_get_iss jwt with
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-          |> Lwt.return
+        json_response_of_a_string "Error" e ~status:`Forbidden
+        |> Lwt.return
       | Ok iss ->
-          Response.make ~status:`OK ~body:(Body.of_string iss) () |> Lwt.return
+        json_response_of_a_string "id" iss ~status:`OK
+        |> Lwt.return
       )
 
  (*factorisation*)
@@ -108,21 +109,22 @@ let verify req =
   | None -> Response.make ~status:`Bad_request () |> Lwt.return
   | Some json ->
       let open Yojson.Safe.Util in
-      let jwt = match Request.header "Authorization" req with | Some str -> str | None -> ""  in
+      let jwt = Option.value (Request.header "Authorization" req) ~default:""  in
       ( match Service.Jwt.verify_and_get_iss jwt with
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-          |> Lwt.return
+        json_response_of_a_string "Error" e ~status:`Forbidden
+        |> Lwt.return
       | Ok _ -> action ~uuid ~req
       )
+
 (* as member I want be able to delete my account *)
 let delete_member ~uuid ~req = 
   let open Lwt in
   MemberServive.delete ~uuid
   >>= (function
   | Error e ->
-      Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-      |> Lwt.return
+    json_response_of_a_string "Error" e ~status:`Forbidden
+    |> Lwt.return
   | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
 
 (* as member I want be able to get my account informations *)
@@ -132,8 +134,8 @@ let get_member ~uuid ~req=
   MemberServive.get_by_id ~uuid
   >>= (function
   | Error e ->
-      Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-      |> Lwt.return
+    json_response_of_a_string "Error" e ~status:`Forbidden
+    |> Lwt.return
   | Ok res -> Response.of_json res|> Lwt.return) 
 (* as member I want be able to update my account informations *)
 let update ~uuid ~req=
@@ -150,8 +152,8 @@ let update ~uuid ~req=
   MemberServive.update ~uuid ~email ~password ~username
   >>= (function
   | Error e ->
-      Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
-      |> Lwt.return
+    json_response_of_a_string "Error" e ~status:`Forbidden
+    |> Lwt.return
   | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
 
 let routes =
