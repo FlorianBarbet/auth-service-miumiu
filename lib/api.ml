@@ -100,7 +100,7 @@ let verify req =
       )
 
  (*factorisation*)
- let check_auth action req=     
+ (*let check_auth action req=     
   let open Lwt in
   let uuid = Router.param req "id" in
   req
@@ -114,11 +114,23 @@ let verify req =
       | Error e ->
         json_response_of_a_string "Error" e ~status:`Forbidden
         |> Lwt.return
-      | Ok _ -> action ~uuid ~req
+      | Ok _ -> action ~uuid ~json
       )
+*)
+let check_auth action req=     
+  let open Lwt in
+  let uuid = Router.param req "id" in
+  let open Yojson.Safe.Util in
+  let jwt = Option.value (Request.header "Authorization" req) ~default:""  in
+  let json = ( req |> Request.to_json  ) in
+  match Service.Jwt.verify_and_get_iss jwt with
+      | Error e ->
+        json_response_of_a_string "Error" e ~status:`Forbidden
+        |> Lwt.return
+      | Ok _ -> action ~uuid ~json
 
 (* as member I want be able to delete my account *)
-let delete_member ~uuid ~req = 
+let delete_member ~uuid ~json = 
   let open Lwt in
   MemberServive.delete ~uuid
   >>= (function
@@ -128,7 +140,7 @@ let delete_member ~uuid ~req =
   | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
 
 (* as member I want be able to get my account informations *)
-let get_member ~uuid ~req= 
+let get_member ~uuid ~json= 
   let open Lwt in
   let open Yojson.Safe.Util in
   MemberServive.get_by_id ~uuid
@@ -138,24 +150,22 @@ let get_member ~uuid ~req=
     |> Lwt.return
   | Ok res -> Response.of_json res|> Lwt.return) 
 (* as member I want be able to update my account informations *)
-let update ~uuid ~req=
+let update ~uuid ~json=
   let open Lwt in
-  req
-  |> Request.to_json
-  >>= function
+  let open Yojson.Safe.Util in
+  json >>= function 
   | None -> Response.make ~status:`Bad_request () |> Lwt.return
-  | Some json ->
-      let open Yojson.Safe.Util in
-      let email = json |> member "email" |> to_string_option
-      and password = json |> member "password" |> to_string_option
-      and username = json |> member "username" |> to_string_option in
-  MemberServive.update ~uuid ~email ~password ~username
-  >>= (function
-  | Error e ->
-    json_response_of_a_string "Error" e ~status:`Forbidden
-    |> Lwt.return
-  | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
-
+  | Some yojson ->(
+      let email = yojson |> member "email" |> to_string_option
+      and password = yojson |> member "password" |> to_string_option
+      and username = yojson |> member "username" |> to_string_option in
+      MemberServive.update ~uuid ~email ~password ~username
+      >>= (function
+      | Error e ->
+        json_response_of_a_string "Error" e ~status:`Forbidden
+        |> Lwt.return
+      | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
+  )
 let routes =
   [ App.get "/" root
   ; App.post "/echo" echo
@@ -169,3 +179,4 @@ let routes =
 
 
 let add_routes app = List.fold_left (fun app route -> route app) app routes
+

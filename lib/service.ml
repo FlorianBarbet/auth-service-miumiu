@@ -69,7 +69,6 @@ module Member (MemberRepository : Repository.MEMBER) = struct
         | Error _ -> Lwt.return_error "Wrong email or password")
   
   let delete ~uuid = 
-    
     let open Lwt in 
     match D.Uuid.make uuid with
     | Error e -> Lwt.return_error e
