@@ -100,23 +100,7 @@ let verify req =
       )
 
  (*factorisation*)
- (*let check_auth action req=     
-  let open Lwt in
-  let uuid = Router.param req "id" in
-  req
-  |> Request.to_json
-  >>= function
-  | None -> Response.make ~status:`Bad_request () |> Lwt.return
-  | Some json ->
-      let open Yojson.Safe.Util in
-      let jwt = Option.value (Request.header "Authorization" req) ~default:""  in
-      ( match Service.Jwt.verify_and_get_iss jwt with
-      | Error e ->
-        json_response_of_a_string "Error" e ~status:`Forbidden
-        |> Lwt.return
-      | Ok _ -> action ~uuid ~json
-      )
-*)
+ 
 let check_auth action req=     
   let open Lwt in
   let uuid = Router.param req "id" in
