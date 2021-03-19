@@ -48,7 +48,7 @@ let signup req =
       MemberServive.signup ~email ~password ~username
       >>= (function
       | Error e ->
-        json_response_of_a_string "Error" e ~status:`Forbidden
+        json_response_of_a_string "error" e ~status:`Forbidden
         |> Lwt.return
       | Ok _ -> Response.make ~status:`Created () |> Lwt.return)
 
@@ -67,12 +67,12 @@ let signin req =
       MemberServive.signin ~email ~password
       >>= (function
       | Error e ->
-        json_response_of_a_string "Error" e ~status:`Forbidden
+        json_response_of_a_string "error" e ~status:`Forbidden
         |> Lwt.return
       | Ok jwt ->
           ( match jwt with
           | Error e ->
-            json_response_of_a_string "Error" e ~status:`Forbidden
+            json_response_of_a_string "error" e ~status:`Forbidden
             |> Lwt.return
           | Ok jwt_string ->
             json_response_of_a_string "jwt" jwt_string ~status:`OK
@@ -92,7 +92,7 @@ let verify req =
       let jwt = json |> member "jwt" |> to_string in
       ( match Service.Jwt.verify_and_get_iss jwt with
       | Error e ->
-        json_response_of_a_string "Error" e ~status:`Forbidden
+        json_response_of_a_string "error" e ~status:`Forbidden
         |> Lwt.return
       | Ok iss ->
         json_response_of_a_string "id" iss ~status:`OK
@@ -109,7 +109,7 @@ let check_auth action req=
   let json = ( req |> Request.to_json  ) in
   match Service.Jwt.verify_and_get_iss jwt with
       | Error e ->
-        json_response_of_a_string "Error" e ~status:`Forbidden
+        json_response_of_a_string "error" e ~status:`Forbidden
         |> Lwt.return
       | Ok _ -> action ~uuid ~json
 
@@ -119,7 +119,7 @@ let delete_member ~uuid ~json =
   MemberServive.delete ~uuid
   >>= (function
   | Error e ->
-    json_response_of_a_string "Error" e ~status:`Forbidden
+    json_response_of_a_string "error" e ~status:`Forbidden
     |> Lwt.return
   | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
 
@@ -130,7 +130,7 @@ let get_member ~uuid ~json=
   MemberServive.get_by_id ~uuid
   >>= (function
   | Error e ->
-    json_response_of_a_string "Error" e ~status:`Forbidden
+    json_response_of_a_string "error" e ~status:`Forbidden
     |> Lwt.return
   | Ok res -> Response.of_json res|> Lwt.return) 
 (* as member I want be able to update my account informations *)
@@ -146,7 +146,7 @@ let update ~uuid ~json=
       MemberServive.update ~uuid ~email ~password ~username
       >>= (function
       | Error e ->
-        json_response_of_a_string "Error" e ~status:`Forbidden
+        json_response_of_a_string "error" e ~status:`Forbidden
         |> Lwt.return
       | Ok _ -> Response.make ~status:`OK () |> Lwt.return) 
   )
