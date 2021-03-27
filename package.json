@@ -4,8 +4,8 @@
   "description": "An authentication microservice based on JWT strategy",
   "license": "MPL-2.0",
   "scripts": {
-    "start": "esy ; esy x auth",
-    "test": "esy ; esy x test-auth"
+    "start": "esy x auth",
+    "test": "esy x test-auth"
   },
   "dependencies": {
     "@opam/caqti": "1.2.3",
