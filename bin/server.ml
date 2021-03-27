@@ -5,8 +5,9 @@
 open Opium
 open Auth
 (** Build the Opium app *)
-let app = App.empty |> 
-App.middleware (Middleware.allow_cors ~origins:["*"] ())
+let app = App.empty 
+|> App.middleware (Middleware.logger)
+|> App.middleware (Middleware.allow_cors ~origins:["*"] ())
 |> App.cmd_name Infra.Environment.app_name 
 |> Api.add_routes
 
