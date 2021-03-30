@@ -4,5 +4,9 @@
  export POSTGRESQL_ADDON_DB="authdb"
  export POSTGRESQL_ADDON_USER="miumiu"
  export POSTGRESQL_ADDON_PASSWORD="miumiu"
+
+ export JWT_SECRET="changeit"
+ export SEED="you should really change it"
+
  export LEVEL="DEBUG"
  
